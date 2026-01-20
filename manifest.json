@@ -1,0 +1,55 @@
+{
+  "name": "PULSE - Global Intelligence Monitor",
+  "short_name": "PULSE",
+  "description": "Real-time global intelligence monitoring platform with threat assessment, prediction markets, and OSINT feeds",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#ff6600",
+  "orientation": "any",
+  "scope": "/",
+  "lang": "en-US",
+  "categories": ["news", "business", "productivity"],
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshot.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "PULSE Dashboard"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Intel Feed",
+      "url": "/?view=intel",
+      "description": "View latest intelligence"
+    },
+    {
+      "name": "Threat Map",
+      "url": "/?view=map",
+      "description": "Global threat visualization"
+    },
+    {
+      "name": "Markets",
+      "url": "/?view=markets",
+      "description": "Prediction & financial markets"
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false
+}

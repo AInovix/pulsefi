@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>PULSE Icon Generator</title>
+    <style>
+        body { font-family: system-ui; background: #1a1a1a; color: white; padding: 40px; text-align: center; }
+        canvas { border: 1px solid #333; margin: 20px; }
+        button { padding: 10px 20px; margin: 10px; background: #ff6600; border: none; color: white; cursor: pointer; border-radius: 4px; }
+        button:hover { background: #ff8833; }
+        .icons { display: flex; justify-content: center; gap: 40px; flex-wrap: wrap; }
+        .icon-box { text-align: center; }
+    </style>
+</head>
+<body>
+    <h1>PULSE App Icons</h1>
+    <p>Click to download each icon size</p>
+    
+    <div class="icons">
+        <div class="icon-box">
+            <canvas id="icon-192" width="192" height="192"></canvas>
+            <br>
+            <button onclick="download('icon-192', 'icon-192.png')">Download 192x192</button>
+        </div>
+        <div class="icon-box">
+            <canvas id="icon-512" width="512" height="512"></canvas>
+            <br>
+            <button onclick="download('icon-512', 'icon-512.png')">Download 512x512</button>
+        </div>
+    </div>
+
+    <script>
+        function drawIcon(canvas) {
+            const ctx = canvas.getContext('2d');
+            const size = canvas.width;
+            const center = size / 2;
+            
+            // Background
+            ctx.fillStyle = '#0a0a0a';
+            ctx.fillRect(0, 0, size, size);
+            
+            // Outer rings
+            ctx.strokeStyle = '#1a1a1a';
+            ctx.lineWidth = size * 0.04;
+            ctx.beginPath();
+            ctx.arc(center, center, size * 0.35, 0, Math.PI * 2);
+            ctx.stroke();
+            
+            ctx.strokeStyle = '#2a2a2a';
+            ctx.lineWidth = size * 0.03;
+            ctx.beginPath();
+            ctx.arc(center, center, size * 0.25, 0, Math.PI * 2);
+            ctx.stroke();
+            
+            // Main ring
+            ctx.strokeStyle = '#ff6600';
+            ctx.lineWidth = size * 0.02;
+            ctx.beginPath();
+            ctx.arc(center, center, size * 0.16, 0, Math.PI * 2);
+            ctx.stroke();
+            
+            // Center dot
+            ctx.fillStyle = '#ff6600';
+            ctx.beginPath();
+            ctx.arc(center, center, size * 0.06, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Crosshairs
+            ctx.strokeStyle = '#ff6600';
+            ctx.lineWidth = size * 0.015;
+            ctx.lineCap = 'round';
+            
+            // Top
+            ctx.beginPath();
+            ctx.moveTo(center, size * 0.11);
+            ctx.lineTo(center, size * 0.23);
+            ctx.stroke();
+            
+            // Bottom
+            ctx.beginPath();
+            ctx.moveTo(center, size * 0.77);
+            ctx.lineTo(center, size * 0.89);
+            ctx.stroke();
+            
+            // Left
+            ctx.beginPath();
+            ctx.moveTo(size * 0.11, center);
+            ctx.lineTo(size * 0.23, center);
+            ctx.stroke();
+            
+            // Right
+            ctx.beginPath();
+            ctx.moveTo(size * 0.77, center);
+            ctx.lineTo(size * 0.89, center);
+            ctx.stroke();
+            
+            // Threat dots
+            ctx.fillStyle = '#cc0000';
+            ctx.beginPath();
+            ctx.arc(size * 0.66, size * 0.35, size * 0.025, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = '#aaaa00';
+            ctx.beginPath();
+            ctx.arc(size * 0.35, size * 0.62, size * 0.02, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = '#cc8800';
+            ctx.beginPath();
+            ctx.arc(size * 0.74, size * 0.58, size * 0.015, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        
+        function download(canvasId, filename) {
+            const canvas = document.getElementById(canvasId);
+            const link = document.createElement('a');
+            link.download = filename;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+        
+        // Draw icons
+        drawIcon(document.getElementById('icon-192'));
+        drawIcon(document.getElementById('icon-512'));
+    </script>
+</body>
+</html>

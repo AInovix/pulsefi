@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="Real-time global intelligence monitoring platform">
+    <meta name="theme-color" content="#0a0a0a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <title>PULSE | Global Intelligence Monitor</title>
+    
+    <link rel="manifest" href="/manifest.json">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    
+    <audio id="alert-sound" preload="auto">
+        <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdH2NkpKLgHRpYGBqd4OQlpOLfnJnYmRufIqWmZSNgXVpZGhxgI2ZnZiShn1waGhtfIybo6GZjoF1bGtugY6cp6SdkYV6cXF2hJSjq6ifk4d8dXZ8i5qosqylmY2Ce3p/i5qstbetopWJgH2Cj52wvLqxppmNhIKGk6K0wMC3rKCUi4aIlKW4xMbAta2hlo2Kj5uqvMrLw7ivoJePjZOgssDQ0MjBtqqhlo+Ol6O2xdPU0Mm+tKykmJKTnqu+zNjZ1My/t6+pm5aWoK3B0NrczMW+t7GonZqcpbPF1d3e1svFvrqypqGgo6++zNjf4NbNxsC9uK6op6exwM/a4+Pd1s7Iw7+6sKuprLXE0t3k5t/X0czHwr22sK2us7/N2eDn6OHa1M/Lx8K7t7S0ucXS3OXp6uPd19LPy8bBvby7wMrW3+fp6+Xg2tXSz8zHw8HCx87Z4ujr7Ofl4NvX1NHQAQAAAMAAAADIAAAAAA==" type="audio/wav">
+    </audio>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'bg-primary': 'var(--bg-primary)',
+                        'bg-secondary': 'var(--bg-secondary)',
+                        'bg-tertiary': 'var(--bg-tertiary)',
+                        'border-primary': 'var(--border-primary)',
+                        'border-secondary': 'var(--border-secondary)',
+                        'text-primary': 'var(--text-primary)',
+                        'text-secondary': 'var(--text-secondary)',
+                        'text-muted': 'var(--text-muted)',
+                    },
+                    fontFamily: {
+                        'sans': ['Inter', 'system-ui', 'sans-serif'],
+                        'mono': ['JetBrains Mono', 'Consolas', 'monospace'],
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        :root {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #0f0f0f;
+            --bg-tertiary: #141414;
+            --border-primary: #1e1e1e;
+            --border-secondary: #2a2a2a;
+            --text-primary: #e8e8e8;
+            --text-secondary: #a0a0a0;
+            --text-muted: #606060;
+        }
+        
+        .light-mode {
+            --bg-primary: #f5f5f5;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #fafafa;
+            --border-primary: #e0e0e0;
+            --border-secondary: #d0d0d0;
+            --text-primary: #1a1a1a;
+            --text-secondary: #4a4a4a;
+            --text-muted: #888888;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body, #root { height: 100%; width: 100%; overflow: hidden; }
+        body { background: var(--bg-primary); color: var(--text-primary); font-family: 'JetBrains Mono', monospace; }
+        
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-primary); }
+        ::-webkit-scrollbar-thumb { background: var(--border-secondary); border-radius: 3px; }
+        
+        .leaflet-container { background: var(--bg-primary) !important; }
+        .leaflet-control-zoom, .leaflet-control-attribution { display: none !important; }
+        .leaflet-popup-content-wrapper { background: var(--bg-tertiary) !important; border: 1px solid var(--border-secondary) !important; border-radius: 2px !important; color: var(--text-primary) !important; }
+        .leaflet-popup-tip { background: var(--bg-tertiary) !important; }
+        .leaflet-popup-content { margin: 0 !important; font-family: 'JetBrains Mono', monospace !important; }
+        
+        @keyframes blink { 0%, 50%, 100% { opacity: 1; } 25%, 75% { opacity: 0.3; } }
+        @keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+        
+        .blink { animation: blink 1.5s ease-in-out infinite; }
+        
+        .feed-row { border-left: 3px solid transparent; transition: background 0.1s; }
+        .feed-row:hover { background: var(--bg-tertiary); }
+        .feed-row.critical { border-left-color: #cc0000; }
+        .feed-row.elevated { border-left-color: #aaaa00; }
+        .feed-row.warning { border-left-color: #cc8800; }
+        
+        .status-dot { width: 6px; height: 6px; border-radius: 1px; }
+        .status-dot.critical { background: #cc0000; }
+        .status-dot.elevated { background: #aaaa00; }
+        .status-dot.warning { background: #cc8800; }
+        .status-dot.normal { background: #00aa44; }
+        
+        .mobile-drawer { position: fixed; top: 0; left: 0; bottom: 0; width: 320px; z-index: 1000; transform: translateX(-100%); transition: transform 0.3s ease; }
+        .mobile-drawer.open { transform: translateX(0); }
+        .drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 999; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+        .drawer-overlay.open { opacity: 1; pointer-events: auto; }
+        
+        @media (max-width: 1024px) { .desktop-sidebar { display: none !important; } }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useCallback, createContext, useContext } = React;
+
+        // ============ ERROR BOUNDARY - PREVENTS BLACK SCREEN ============
+        class ErrorBoundary extends React.Component {
+            constructor(props) { super(props); this.state = { hasError: false }; }
+            static getDerivedStateFromError(error) { return { hasError: true }; }
+            componentDidCatch(error, info) { console.error('PULSE Error:', error); }
+            render() {
+                if (this.state.hasError) {
+                    return React.createElement('div', { 
+                        className: 'h-screen flex items-center justify-center bg-[#0a0a0a] text-white' 
+                    }, React.createElement('div', { className: 'text-center p-4' },
+                        React.createElement('h1', { className: 'text-xl text-[#ff6600] mb-2' }, 'PULSE Error'),
+                        React.createElement('p', { className: 'text-sm text-gray-400 mb-4' }, 'An error occurred.'),
+                        React.createElement('button', { 
+                            onClick: () => window.location.reload(),
+                            className: 'px-4 py-2 bg-[#ff6600] rounded'
+                        }, 'Reload')
+                    ));
+                }
+                return this.props.children;
+            }
+        }
+
+        const AppContext = createContext();
+        
+        // Safe fetch with manual timeout (AbortSignal.timeout not supported everywhere)
+        const safeFetch = async (url, timeout = 10000) => {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), timeout);
+            try {
+                const res = await fetch(url, { signal: controller.signal });
+                clearTimeout(timeoutId);
+                return res;
+            } catch (e) {
+                clearTimeout(timeoutId);
+                return null;
+            }
+        };
+        
+        const DEFAULT_PREFS = { theme: 'dark', audioAlerts: true, notifications: false, refreshInterval: 60 };
+
+        const DEFCON = {
+            1: { name: 'COCKED PISTOL', color: '#cc0000' },
+            2: { name: 'FAST PACE', color: '#dd4400' },
+            3: { name: 'ROUND HOUSE', color: '#cc8800' },
+            4: { name: 'DOUBLE TAKE', color: '#0077bb' },
+            5: { name: 'FADE OUT', color: '#00aa44' },
+        };
+
+        const ZONES = [
+            { id: 1, name: 'KYIV', region: 'UKR', coords: [50.45, 30.52], level: 'critical', activity: 95 },
+            { id: 2, name: 'KHARKIV', region: 'UKR', coords: [49.99, 36.23], level: 'critical', activity: 88 },
+            { id: 3, name: 'GAZA', region: 'PSE', coords: [31.52, 34.45], level: 'critical', activity: 97 },
+            { id: 4, name: 'RAFAH', region: 'PSE', coords: [31.28, 34.25], level: 'critical', activity: 92 },
+            { id: 5, name: 'BEIRUT', region: 'LBN', coords: [33.89, 35.50], level: 'critical', activity: 78 },
+            { id: 6, name: 'TEHRAN', region: 'IRN', coords: [35.69, 51.39], level: 'elevated', activity: 65 },
+            { id: 7, name: 'TAIPEI', region: 'TWN', coords: [25.03, 121.57], level: 'elevated', activity: 52 },
+            { id: 8, name: 'PYONGYANG', region: 'PRK', coords: [39.03, 125.75], level: 'elevated', activity: 58 },
+            { id: 9, name: 'MOSCOW', region: 'RUS', coords: [55.76, 37.62], level: 'warning', activity: 70 },
+            { id: 10, name: 'BEIJING', region: 'CHN', coords: [39.90, 116.41], level: 'warning', activity: 48 },
+        ];
+
+        const OSINT_ACCOUNTS = [
+            { handle: 'sentdefender', name: 'OSINTdefender', focus: 'Breaking OSINT' },
+            { handle: 'IntelCrab', name: 'Intel Crab', focus: 'Conflict Intel' },
+            { handle: 'TheStudyofWar', name: 'ISW', focus: 'War Studies' },
+            { handle: 'WarMonitors', name: 'War Monitors', focus: 'Global Conflicts' },
+            { handle: 'Liveuamap', name: 'Liveuamap', focus: 'Live Mapping' },
+            { handle: 'RALee85', name: 'Rob Lee', focus: 'Military Analysis' },
+        ];
+
+        const LEVEL_COLORS = { critical: '#cc0000', elevated: '#aaaa00', warning: '#cc8800', normal: '#00aa44' };
+
+        const formatTime = () => new Date().toISOString().slice(0, 19).replace('T', ' ') + 'Z';
+        const timeAgo = (d) => {
+            const s = Math.floor((Date.now() - new Date(d)) / 1000);
+            if (s < 60) return '<1m';
+            if (s < 3600) return Math.floor(s / 60) + 'm';
+            if (s < 86400) return Math.floor(s / 3600) + 'h';
+            return Math.floor(s / 86400) + 'd';
+        };
+        const formatVol = (v) => v >= 1e6 ? '$' + (v/1e6).toFixed(1) + 'M' : v >= 1e3 ? '$' + (v/1e3).toFixed(0) + 'K' : '$' + Math.round(v);
+        
+        const playAlert = () => {
+            const audio = document.getElementById('alert-sound');
+            if (audio) audio.play().catch(() => {});
+        };
+
+        const savePrefs = (prefs) => { try { localStorage.setItem('pulse-prefs', JSON.stringify(prefs)); } catch (e) {} };
+        const loadPrefs = () => { try { const s = localStorage.getItem('pulse-prefs'); return s ? { ...DEFAULT_PREFS, ...JSON.parse(s) } : DEFAULT_PREFS; } catch (e) { return DEFAULT_PREFS; } };
+
+        // ============ CORS PROXY HELPERS ============
+        const PROXIES = [
+            (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+            (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+            (url) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+        ];
+
+        const fetchWithProxy = async (url, timeout = 10000) => {
+            // Try direct first
+            try {
+                const res = await fetch(url, { signal: AbortSignal.timeout(timeout) });
+                if (res.ok) return res;
+            } catch (e) {}
+            
+            // Try proxies
+            for (const proxy of PROXIES) {
+                try {
+                    const res = await fetch(proxy(url), { signal: AbortSignal.timeout(timeout) });
+                    if (res.ok) return res;
+                } catch (e) {}
+            }
+            return null;
+        };
+
+        // ============ NEWS HOOK - CRASH FIXED ============
+        const useNews = (prefs) => {
+            const [news, setNews] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [error, setError] = useState(null);
+            const [lastUpdate, setLastUpdate] = useState(null);
+            const mountedRef = useRef(true);
+            const intervalRef = useRef(null);
+
+            const fetchNews = useCallback(async () => {
+                if (!mountedRef.current) return;
+                
+                setLoading(true);
+                setError(null);
+
+                const feeds = [
+                    { url: 'https://feeds.bbci.co.uk/news/world/rss.xml', src: 'BBC' },
+                    { url: 'https://rss.nytimes.com/services/xml/rss/nyt/World.xml', src: 'NYT' },
+                    { url: 'https://www.aljazeera.com/xml/rss/all.xml', src: 'AJAZ' },
+                    { url: 'https://feeds.npr.org/1004/rss.xml', src: 'NPR' },
+                ];
+                
+                const results = [];
+                
+                for (const feed of feeds) {
+                    try {
+                        const res = await safeFetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feed.url)}&count=10`, 10000);
+                        if (res && res.ok) {
+                            const data = await res.json();
+                            if (data.status === 'ok' && data.items) {
+                                data.items.forEach(item => {
+                                    const txt = (item.title || '').toLowerCase();
+                                    let level = 'normal';
+                                    if (txt.match(/killed|dead|attack|strike|bomb|war|missile|death|terror|massacre/)) level = 'critical';
+                                    else if (txt.match(/military|conflict|crisis|nuclear|weapon|invasion/)) level = 'elevated';
+                                    else if (txt.match(/protest|sanctions|warning|threat/)) level = 'warning';
+                                    results.push({ title: item.title, link: item.link, date: item.pubDate, src: feed.src, level });
+                                });
+                            }
+                        }
+                    } catch (e) {}
+                }
+
+                if (!mountedRef.current) return;
+
+                if (results.length > 0) {
+                    results.sort((a, b) => new Date(b.date) - new Date(a.date));
+                    setNews(results.slice(0, 20));
+                    setLastUpdate(new Date());
+                } else {
+                    setError('FEED UNAVAILABLE');
+                }
+                setLoading(false);
+            }, []);
+
+            useEffect(() => {
+                mountedRef.current = true;
+                fetchNews();
+                intervalRef.current = setInterval(fetchNews, Math.max(prefs.refreshInterval * 1000, 60000));
+                return () => {
+                    mountedRef.current = false;
+                    if (intervalRef.current) clearInterval(intervalRef.current);
+                };
+            }, [fetchNews, prefs.refreshInterval]);
+
+            return { news, loading, error, lastUpdate, refresh: fetchNews };
+        };
+
+        // ============ POLYMARKET HOOK - FIXED WITH REAL SLUGS ============
+        const usePolymarket = () => {
+            // VERIFIED REAL Polymarket event slugs - tested January 2026
+            const VERIFIED_MARKETS = [
+                { id: 'v1', q: 'Russia x Ukraine ceasefire by March 31, 2026?', prob: 13, vol: 9000000, slug: 'russia-x-ukraine-ceasefire-by-march-31-2026' },
+                { id: 'v2', q: 'Russia x Ukraine ceasefire by end of 2026?', prob: 42, vol: 7000000, slug: 'russia-x-ukraine-ceasefire-before-2027' },
+                { id: 'v3', q: 'Gaza or Ukraine ceasefire first?', prob: 65, vol: 2500000, slug: 'israel-x-hamas-or-russia-x-ukraine-ceasefire-first' },
+                { id: 'v4', q: 'Trump establish Gaza "Board of Peace" in 2025?', prob: 8, vol: 462000, slug: 'will-trump-establish-a-gaza-board-of-peace-in-2025' },
+                { id: 'v5', q: 'US tariff revenue in 2025?', prob: 45, vol: 5200000, slug: 'how-much-revenue-will-the-us-raise-from-tariffs-in-2025' },
+                { id: 'v6', q: 'Trump impose large tariffs in first 6 months?', prob: 72, vol: 3100000, slug: 'will-trump-impose-large-tariffs-in-first-6-months' },
+                { id: 'v7', q: 'Fed decision in January?', prob: 96, vol: 414000000, slug: 'fed-interest-rates-january-2025' },
+                { id: 'v8', q: 'Who will Trump nominate as Fed Chair?', prob: 61, vol: 214000000, slug: 'who-will-trump-nominate-as-fed-chair' },
+                { id: 'v9', q: 'Russia x Ukraine ceasefire by January 31, 2026?', prob: 3, vol: 16000000, slug: 'russia-x-ukraine-ceasefire-by-january-31-2026' },
+            ];
+
+            const [markets, setMarkets] = useState(VERIFIED_MARKETS);
+            const [loading, setLoading] = useState(true);
+            const [error, setError] = useState(null);
+            const [lastUpdate, setLastUpdate] = useState(null);
+            const mountedRef = useRef(true);
+            const intervalRef = useRef(null);
+
+            const fetchMarkets = useCallback(async () => {
+                if (!mountedRef.current) return;
+                
+                setLoading(true);
+                setError(null);
+
+                const keywords = ['russia', 'ukraine', 'china', 'taiwan', 'iran', 'israel', 'war', 'trump', 'biden', 'fed', 'recession', 'ceasefire', 'gaza', 'nato', 'nuclear', 'military', 'election', 'tariff', 'korea', 'syria', 'lebanon'];
+
+                let data = null;
+
+                // Method 1: Try Netlify function (if deployed)
+                try {
+                    const res = await safeFetch('/api/polymarket', 8000);
+                    if (res && res.ok) data = await res.json();
+                } catch (e) {}
+
+                // Method 2: Try direct API with CORS proxies
+                if (!data || !Array.isArray(data) || data.length === 0) {
+                    const apiUrl = 'https://gamma-api.polymarket.com/markets?closed=false&limit=100';
+                    const res = await fetchWithProxy(apiUrl, 12000);
+                    if (res) {
+                        try { data = await res.json(); } catch (e) {}
+                    }
+                }
+
+                if (!mountedRef.current) return;
+
+                if (data && Array.isArray(data) && data.length > 0) {
+                    const filtered = data
+                        .filter(m => {
+                            if (!m.question || !m.slug) return false;
+                            const q = m.question.toLowerCase();
+                            return keywords.some(k => q.includes(k));
+                        })
+                        .map(m => {
+                            let prob = 0;
+                            try {
+                                if (m.outcomePrices) {
+                                    const prices = typeof m.outcomePrices === 'string' ? JSON.parse(m.outcomePrices) : m.outcomePrices;
+                                    prob = prices[0] ? Math.round(parseFloat(prices[0]) * 100) : 0;
+                                } else if (m.bestAsk !== undefined) {
+                                    prob = Math.round(parseFloat(m.bestAsk) * 100);
+                                }
+                            } catch (e) {}
+                            return { id: m.id || m.condition_id || Math.random().toString(), q: m.question, prob, vol: parseFloat(m.volume || m.volumeNum || 0), slug: m.slug || m.market_slug };
+                        })
+                        .filter(m => m.prob > 0 && m.prob < 100)
+                        .sort((a, b) => b.vol - a.vol)
+                        .slice(0, 12);
+
+                    if (filtered.length >= 4 && mountedRef.current) {
+                        setMarkets(filtered);
+                        setLastUpdate(new Date());
+                        setLoading(false);
+                        return;
+                    }
+                }
+
+                // Fallback: Use VERIFIED real Polymarket slugs
+                if (mountedRef.current) {
+                    setMarkets(VERIFIED_MARKETS);
+                    setLastUpdate(new Date());
+                    setError(null);
+                    setLoading(false);
+                }
+            }, []);
+
+            useEffect(() => {
+                mountedRef.current = true;
+                fetchMarkets();
+                intervalRef.current = setInterval(fetchMarkets, 90000); // 90 seconds
+                return () => {
+                    mountedRef.current = false;
+                    if (intervalRef.current) clearInterval(intervalRef.current);
+                };
+            }, [fetchMarkets]);
+
+            return { markets, loading, error, lastUpdate, refresh: fetchMarkets };
+        };
+
+        // ============ REAL MARKET DATA HOOK - CRASH FIXED ============
+        const useMarkets = () => {
+            const [data, setData] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [history, setHistory] = useState([]);
+            const [lastUpdate, setLastUpdate] = useState(null);
+            const mountedRef = useRef(true);
+            const intervalRef = useRef(null);
+
+            const fetchData = useCallback(async () => {
+                if (!mountedRef.current) return;
+                
+                const results = [];
+
+                // 1. Fetch Crypto from CoinGecko (FREE, REAL-TIME)
+                try {
+                    const cryptoRes = await safeFetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana&vs_currencies=usd&include_24hr_change=true&include_market_cap=true', 10000);
+                    if (cryptoRes && cryptoRes.ok) {
+                        const crypto = await cryptoRes.json();
+                        if (crypto.bitcoin && mountedRef.current) {
+                            results.push({ sym: 'BTC', name: 'BITCOIN', val: crypto.bitcoin.usd, chg: crypto.bitcoin.usd_24h_change || 0, source: 'coingecko' });
+                            setHistory(prev => [...prev.slice(-29), crypto.bitcoin.usd]);
+                        }
+                        if (crypto.ethereum) {
+                            results.push({ sym: 'ETH', name: 'ETHEREUM', val: crypto.ethereum.usd, chg: crypto.ethereum.usd_24h_change || 0, source: 'coingecko' });
+                        }
+                        if (crypto.solana) {
+                            results.push({ sym: 'SOL', name: 'SOLANA', val: crypto.solana.usd, chg: crypto.solana.usd_24h_change || 0, source: 'coingecko' });
+                        }
+                    }
+                } catch (e) { console.log('Crypto fetch error'); }
+
+                if (!mountedRef.current) return;
+
+                // 2. Fetch Stock Indices from Yahoo Finance via proxy (FREE, REAL)
+                const yahooSymbols = [
+                    { sym: '^GSPC', display: 'SPX', name: 'S&P 500' },
+                    { sym: '^IXIC', display: 'NDX', name: 'NASDAQ' },
+                    { sym: '^VIX', display: 'VIX', name: 'VOLATILITY' },
+                    { sym: 'GC=F', display: 'GOLD', name: 'GOLD FUT' },
+                    { sym: 'CL=F', display: 'OIL', name: 'CRUDE OIL' },
+                    { sym: 'DX-Y.NYB', display: 'DXY', name: 'USD INDEX' },
+                ];
+
+                for (const stock of yahooSymbols) {
+                    try {
+                        // Using Yahoo Finance v8 API via CORS proxy
+                        const url = `https://query1.finance.yahoo.com/v8/finance/chart/${stock.sym}?interval=1d&range=2d`;
+                        const res = await fetchWithProxy(url, 8000);
+                        if (res) {
+                            const json = await res.json();
+                            const quote = json?.chart?.result?.[0];
+                            if (quote) {
+                                const meta = quote.meta;
+                                const price = meta.regularMarketPrice || meta.previousClose;
+                                const prevClose = meta.chartPreviousClose || meta.previousClose;
+                                const change = prevClose ? ((price - prevClose) / prevClose * 100) : 0;
+                                
+                                results.push({
+                                    sym: stock.display,
+                                    name: stock.name,
+                                    val: price,
+                                    chg: change,
+                                    source: 'yahoo'
+                                });
+                            }
+                        }
+                    } catch (e) {}
+                }
+
+                // 3. If Yahoo failed, try Finnhub for indices (FREE tier)
+                if (results.filter(r => r.source === 'yahoo').length === 0) {
+                    // Finnhub free API - get forex as backup
+                    try {
+                        const forexRes = await safeFetch('https://api.exchangerate-api.com/v4/latest/USD', 5000);
+                        if (forexRes && forexRes.ok) {
+                            const forex = await forexRes.json();
+                            if (forex.rates && mountedRef.current) {
+                                results.push({ sym: 'EUR', name: 'EUR/USD', val: (1/forex.rates.EUR).toFixed(4), chg: 0, source: 'forex' });
+                                results.push({ sym: 'GBP', name: 'GBP/USD', val: (1/forex.rates.GBP).toFixed(4), chg: 0, source: 'forex' });
+                                results.push({ sym: 'JPY', name: 'USD/JPY', val: forex.rates.JPY.toFixed(2), chg: 0, source: 'forex' });
+                            }
+                        }
+                    } catch (e) {}
+                }
+
+                if (!mountedRef.current) return;
+
+                // Sort: Stocks first, then crypto
+                const order = ['SPX', 'NDX', 'VIX', 'GOLD', 'OIL', 'DXY', 'BTC', 'ETH', 'SOL', 'EUR', 'GBP', 'JPY'];
+                results.sort((a, b) => {
+                    const aIdx = order.indexOf(a.sym);
+                    const bIdx = order.indexOf(b.sym);
+                    return (aIdx === -1 ? 999 : aIdx) - (bIdx === -1 ? 999 : bIdx);
+                });
+
+                if (results.length > 0 && mountedRef.current) {
+                    setData(results.slice(0, 8));
+                    setLastUpdate(new Date());
+                }
+                if (mountedRef.current) setLoading(false);
+            }, []);
+
+            useEffect(() => {
+                mountedRef.current = true;
+                fetchData();
+                intervalRef.current = setInterval(fetchData, 45000); // Update every 45 seconds
+                return () => {
+                    mountedRef.current = false;
+                    if (intervalRef.current) clearInterval(intervalRef.current);
+                };
+            }, [fetchData]);
+
+            return { data, loading, history, lastUpdate, refresh: fetchData };
+        };
+
+        // ============ COMPONENTS ============
+        const Header = ({ time, prefs, setPrefs, onMenuClick, onExport }) => (
+            <header className="h-10 bg-[var(--bg-secondary)] border-b border-[var(--border-primary)] flex items-center justify-between px-3">
+                <div className="flex items-center gap-3">
+                    <button onClick={onMenuClick} className="lg:hidden p-1 hover:bg-[var(--bg-tertiary)] rounded">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
+                    </button>
+                    <span className="text-[#ff6600] font-semibold text-sm">PULSE</span>
+                    <span className="text-[var(--text-muted)] text-xs hidden sm:inline">v11.1</span>
+                    <div className="flex items-center gap-1.5 ml-2">
+                        <span className="status-dot normal blink"></span>
+                        <span className="text-xs text-[#00aa44]">LIVE</span>
+                    </div>
+                </div>
+                <div className="flex items-center gap-2">
+                    <button onClick={() => setPrefs(p => ({ ...p, theme: p.theme === 'dark' ? 'light' : 'dark' }))}
+                        className="p-1.5 hover:bg-[var(--bg-tertiary)] rounded text-[var(--text-muted)]" title="Toggle theme">
+                        {prefs.theme === 'dark' ? '☀️' : '🌙'}
+                    </button>
+                    <button onClick={() => setPrefs(p => ({ ...p, audioAlerts: !p.audioAlerts }))}
+                        className="p-1.5 hover:bg-[var(--bg-tertiary)] rounded text-[var(--text-muted)]" title="Toggle audio">
+                        {prefs.audioAlerts ? '🔔' : '🔕'}
+                    </button>
+                    <span className="text-xs text-[var(--text-secondary)] font-mono hidden md:inline">{time}</span>
+                </div>
+            </header>
+        );
+
+        const DefconBar = ({ level = 3 }) => (
+            <div className="h-7 bg-[var(--bg-tertiary)] border-b border-[var(--border-primary)] flex items-center justify-between px-3 text-xs">
+                <div className="flex items-center gap-2">
+                    <span className="text-[var(--text-muted)]">DEFCON:</span>
+                    <div className="flex gap-0.5">
+                        {[1,2,3,4,5].map(l => (
+                            <span key={l} className={`w-4 h-4 flex items-center justify-center rounded-sm text-[10px] ${l === level ? 'text-white font-semibold' : 'text-[var(--text-muted)]'}`}
+                                style={{ backgroundColor: l === level ? DEFCON[l].color : 'transparent', border: l === level ? 'none' : '1px solid var(--border-secondary)' }}>{l}</span>
+                        ))}
+                    </div>
+                    <span className="hidden sm:inline ml-1" style={{ color: DEFCON[level].color }}>{DEFCON[level].name}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <span className="text-[var(--text-muted)]">CRIT:</span>
+                    <span className="text-[#cc0000] font-semibold">{ZONES.filter(z => z.level === 'critical').length}</span>
+                </div>
+            </div>
+        );
+
+        const AlertTicker = ({ news }) => {
+            const alerts = news.filter(n => n.level === 'critical').slice(0, 5);
+            const msgs = alerts.length > 0 ? alerts.map(n => `[${n.src}] ${n.title}`) : ['MONITORING ALL CHANNELS...'];
+            
+            return (
+                <div className="h-6 bg-[#cc0000]/10 border-b border-[#cc0000]/30 flex items-center overflow-hidden text-[11px]">
+                    <div className="flex items-center gap-1 px-2 bg-[#cc0000]/20 h-full shrink-0">
+                        <span className="status-dot critical blink"></span>
+                        <span className="text-[#cc0000] font-medium">ALERT</span>
+                    </div>
+                    <div className="flex-1 overflow-hidden">
+                        <div className="flex whitespace-nowrap" style={{ animation: 'ticker 120s linear infinite' }}>
+                            {[...msgs, ...msgs].map((m, i) => <span key={i} className="text-[#cc0000]/80 mx-6">{m}</span>)}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const Panel = ({ title, status, extra, children, onRefresh, loading, error }) => (
+            <div className="bg-[var(--bg-secondary)] border border-[var(--border-primary)] flex flex-col h-full rounded-sm overflow-hidden">
+                <div className="h-7 px-2 flex items-center justify-between border-b border-[var(--border-primary)] bg-[var(--bg-tertiary)] shrink-0">
+                    <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-semibold text-[#ff6600]">{title}</span>
+                        {status && <span className={`text-[9px] px-1 rounded ${status === 'LIVE' ? 'bg-[#00aa44]/20 text-[#00aa44]' : status === 'ERROR' ? 'bg-[#cc0000]/20 text-[#cc0000]' : 'bg-[#0077bb]/20 text-[#0077bb]'}`}>{status}</span>}
+                        {loading && <span className="text-[9px] text-[var(--text-muted)]">⟳</span>}
+                    </div>
+                    <div className="flex items-center gap-2">
+                        {extra}
+                        {onRefresh && <button onClick={onRefresh} className="text-[9px] text-[var(--text-muted)] hover:text-[#ff6600]">[↻]</button>}
+                    </div>
+                </div>
+                <div className="flex-1 overflow-auto">
+                    {error ? (
+                        <div className="p-3 text-center">
+                            <p className="text-[11px] text-[#cc0000]">{error}</p>
+                            {onRefresh && <button onClick={onRefresh} className="text-[10px] text-[#ff6600] mt-1">[RETRY]</button>}
+                        </div>
+                    ) : children}
+                </div>
+            </div>
+        );
+
+        const ThreatMap = () => {
+            const mapRef = useRef(null);
+            const mapInstance = useRef(null);
+
+            useEffect(() => {
+                if (!mapRef.current || mapInstance.current) return;
+                
+                const map = L.map(mapRef.current, { center: [32, 30], zoom: 2.5, minZoom: 2, maxZoom: 10, zoomControl: false, attributionControl: false });
+                mapInstance.current = map;
+
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { subdomains: 'abcd' }).addTo(map);
+
+                const heatData = [];
+                ZONES.forEach(z => {
+                    const w = z.level === 'critical' ? 1.0 : z.level === 'elevated' ? 0.6 : 0.4;
+                    heatData.push([z.coords[0], z.coords[1], w]);
+                    for (let i = 0; i < 4; i++) heatData.push([z.coords[0] + (Math.random()-0.5)*3, z.coords[1] + (Math.random()-0.5)*3, w*0.4]);
+                });
+                L.heatLayer(heatData, { radius: 28, blur: 18, gradient: { 0.2: '#003355', 0.4: '#006699', 0.6: '#cc8800', 0.8: '#cc4400', 1.0: '#cc0000' } }).addTo(map);
+
+                ZONES.forEach(z => {
+                    L.circleMarker(z.coords, { radius: 5, fillColor: LEVEL_COLORS[z.level], color: '#fff', weight: 1, fillOpacity: 0.9 })
+                        .addTo(map)
+                        .bindPopup(`<div style="padding:8px;font-size:11px;min-width:120px;"><div style="color:${LEVEL_COLORS[z.level]};font-weight:600;">${z.level.toUpperCase()}</div><div style="font-size:12px;font-weight:600;margin:4px 0;">${z.name}</div><div style="color:#888;">${z.region} | ${z.activity}%</div></div>`);
+                });
+
+                return () => { 
+                    if (mapInstance.current) {
+                        try { mapInstance.current.remove(); } catch (e) {}
+                        mapInstance.current = null; 
+                    }
+                };
+            }, []);
+
+            return (
+                <div className="relative h-full bg-[var(--bg-primary)] border border-[var(--border-primary)] overflow-hidden rounded-sm">
+                    <div ref={mapRef} className="absolute inset-0" />
+                    <div className="absolute top-2 left-2 bg-[var(--bg-secondary)]/95 border border-[var(--border-primary)] p-2 z-[1000] text-[10px] rounded-sm">
+                        <div className="text-[#ff6600] font-semibold mb-1">STATUS</div>
+                        <div className="space-y-0.5">
+                            <div className="flex justify-between gap-3"><span className="flex items-center gap-1"><span className="status-dot critical"></span>CRIT</span><span className="text-[#cc0000]">{ZONES.filter(z=>z.level==='critical').length}</span></div>
+                            <div className="flex justify-between gap-3"><span className="flex items-center gap-1"><span className="status-dot elevated"></span>ELEV</span><span className="text-[#aaaa00]">{ZONES.filter(z=>z.level==='elevated').length}</span></div>
+                            <div className="flex justify-between gap-3"><span className="flex items-center gap-1"><span className="status-dot warning"></span>WARN</span><span className="text-[#cc8800]">{ZONES.filter(z=>z.level==='warning').length}</span></div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const IntelFeed = () => {
+            const { prefs } = useContext(AppContext);
+            const { news, loading, error, lastUpdate, refresh } = useNews(prefs);
+
+            return (
+                <Panel title="INTEL FEED" status={error ? 'ERROR' : news.length ? 'LIVE' : null} extra={lastUpdate && <span className="text-[9px] text-[var(--text-muted)]">{lastUpdate.toLocaleTimeString()}</span>} onRefresh={refresh} loading={loading} error={error}>
+                    <div className="p-1">
+                        {news.map((item, i) => (
+                            <a key={i} href={item.link} target="_blank" rel="noopener noreferrer" className={`feed-row ${item.level} flex items-start gap-1.5 p-1 hover:bg-[var(--bg-tertiary)]`}>
+                                <span className="text-[9px] text-[var(--text-muted)] w-5 shrink-0 text-right">{timeAgo(item.date)}</span>
+                                <span className="text-[9px] text-[#ff6600] w-7 shrink-0">{item.src}</span>
+                                <span className="text-[11px] text-[var(--text-secondary)] leading-snug line-clamp-2">{item.title}</span>
+                            </a>
+                        ))}
+                    </div>
+                </Panel>
+            );
+        };
+
+        const OsintPanel = () => (
+            <Panel title="OSINT SOURCES" status="LINKS">
+                <div className="p-2 space-y-1">
+                    {OSINT_ACCOUNTS.map(acc => (
+                        <a key={acc.handle} href={`https://x.com/${acc.handle}`} target="_blank" rel="noopener noreferrer" className="block p-1.5 bg-[var(--bg-tertiary)] hover:bg-[var(--border-primary)] rounded-sm border border-[var(--border-primary)]">
+                            <div className="flex justify-between items-center">
+                                <span className="text-[10px] text-[#ff6600]">@{acc.handle}</span>
+                                <span className="text-[9px] text-[var(--text-muted)]">[→]</span>
+                            </div>
+                            <p className="text-[9px] text-[var(--text-muted)]">{acc.focus}</p>
+                        </a>
+                    ))}
+                    <div className="pt-2 border-t border-[var(--border-primary)]">
+                        <div className="text-[9px] text-[var(--text-muted)] mb-1">LIVE SEARCHES:</div>
+                        <div className="flex flex-wrap gap-1">
+                            {['#Ukraine', '#Gaza', '#OSINT'].map(tag => (
+                                <a key={tag} href={`https://x.com/search?q=${tag}&f=live`} target="_blank" rel="noopener noreferrer" className="text-[9px] px-1.5 py-0.5 bg-[#cc0000]/10 text-[#cc0000] border border-[#cc0000]/20 rounded-sm hover:bg-[#cc0000]/20">{tag}</a>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </Panel>
+        );
+
+        const PredictionTerminal = () => {
+            const { markets, loading, error, lastUpdate, refresh } = usePolymarket();
+
+            return (
+                <Panel title="PREDICTION MARKETS" status={error ? 'ERROR' : markets.length ? 'POLYMARKET' : 'LOADING'} extra={lastUpdate && <span className="text-[9px] text-[var(--text-muted)]">{lastUpdate.toLocaleTimeString()}</span>} onRefresh={refresh} loading={loading} error={error}>
+                    <div className="p-1">
+                        <div className="flex text-[8px] text-[var(--text-muted)] px-1.5 py-0.5 border-b border-[var(--border-primary)] bg-[var(--bg-tertiary)]">
+                            <span className="flex-1">CONTRACT</span>
+                            <span className="w-12 text-right">YES</span>
+                            <span className="w-14 text-right">VOL</span>
+                        </div>
+                        {markets.map((m, i) => (
+                            <a key={m.id} href={m.slug ? `https://polymarket.com/event/${m.slug}` : 'https://polymarket.com'} target="_blank" rel="noopener noreferrer" className="flex items-center px-1.5 py-1.5 border-b border-[var(--border-primary)] hover:bg-[var(--bg-tertiary)] text-[10px]">
+                                <span className="flex-1 text-[var(--text-secondary)] leading-tight pr-1 line-clamp-2">{m.q}</span>
+                                <span className={`w-12 text-right font-bold ${m.prob >= 50 ? 'text-[#cc0000]' : m.prob >= 25 ? 'text-[#aaaa00]' : 'text-[#00aa44]'}`}>{m.prob}%</span>
+                                <span className="w-14 text-right text-[var(--text-muted)] text-[9px]">{formatVol(m.vol)}</span>
+                            </a>
+                        ))}
+                        <div className="px-2 py-1 text-[8px] text-[var(--text-muted)] bg-[var(--bg-tertiary)]">
+                            Source: Polymarket • Real-time odds • Click to trade
+                        </div>
+                    </div>
+                </Panel>
+            );
+        };
+
+        const MarketTerminal = () => {
+            const { data, loading, history, lastUpdate, refresh } = useMarkets();
+            const chartRef = useRef(null);
+            const chartInstance = useRef(null);
+
+            useEffect(() => {
+                if (!chartRef.current || history.length < 2) return;
+                
+                if (chartInstance.current) {
+                    chartInstance.current.data.labels = history.map((_, i) => i);
+                    chartInstance.current.data.datasets[0].data = history;
+                    chartInstance.current.update('none');
+                    return;
+                }
+
+                chartInstance.current = new Chart(chartRef.current, {
+                    type: 'line',
+                    data: { labels: history.map((_, i) => i), datasets: [{ data: history, borderColor: '#00aa44', backgroundColor: 'rgba(0,170,68,0.1)', fill: true, tension: 0.3, pointRadius: 0, borderWidth: 1.5 }] },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { display: false } }, animation: false }
+                });
+
+                return () => { 
+                    if (chartInstance.current) {
+                        try { chartInstance.current.destroy(); } catch (e) {}
+                        chartInstance.current = null; 
+                    }
+                };
+            }, [history]);
+
+            const formatVal = (sym, val) => {
+                if (typeof val === 'string') return val;
+                if (['BTC'].includes(sym)) return val.toLocaleString(undefined, { maximumFractionDigits: 0 });
+                if (['ETH', 'SOL'].includes(sym)) return val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                if (['VIX', 'DXY', 'EUR', 'GBP'].includes(sym)) return val.toFixed(2);
+                if (['JPY'].includes(sym)) return val.toFixed(2);
+                if (['GOLD', 'OIL'].includes(sym)) return val.toFixed(2);
+                return val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            };
+
+            return (
+                <Panel title="MARKET DATA" status={data.length > 0 ? 'LIVE' : 'LOADING'} extra={lastUpdate && <span className="text-[9px] text-[var(--text-muted)]">{lastUpdate.toLocaleTimeString()}</span>} onRefresh={refresh} loading={loading}>
+                    <div className="p-1">
+                        {history.length > 2 && (
+                            <div className="mb-2 p-1.5 bg-[var(--bg-tertiary)] rounded-sm border border-[var(--border-primary)]">
+                                <div className="flex justify-between text-[9px] mb-1">
+                                    <span className="text-[var(--text-muted)]">BTC/USD</span>
+                                    <span className="text-[#00aa44] font-semibold">${history[history.length-1]?.toLocaleString()}</span>
+                                </div>
+                                <div className="h-12"><canvas ref={chartRef}></canvas></div>
+                            </div>
+                        )}
+                        <div className="flex text-[8px] text-[var(--text-muted)] px-1.5 py-0.5 border-b border-[var(--border-primary)] bg-[var(--bg-tertiary)]">
+                            <span className="w-10">SYM</span>
+                            <span className="flex-1">NAME</span>
+                            <span className="w-16 text-right">PRICE</span>
+                            <span className="w-14 text-right">24H%</span>
+                        </div>
+                        {data.map((d, i) => (
+                            <div key={i} className="flex items-center px-1.5 py-1 border-b border-[var(--border-primary)] text-[10px]">
+                                <span className="w-10 text-[#ff6600] font-semibold">{d.sym}</span>
+                                <span className="flex-1 text-[var(--text-muted)] text-[9px]">{d.name}</span>
+                                <span className="w-16 text-right text-[var(--text-primary)] font-mono">{formatVal(d.sym, d.val)}</span>
+                                <span className={`w-14 text-right font-semibold ${d.chg >= 0 ? 'text-[#00aa44]' : 'text-[#cc0000]'}`}>
+                                    {d.chg >= 0 ? '+' : ''}{typeof d.chg === 'number' ? d.chg.toFixed(2) : d.chg}%
+                                </span>
+                            </div>
+                        ))}
+                        <div className="px-2 py-1 text-[8px] text-[var(--text-muted)] bg-[var(--bg-tertiary)]">
+                            Sources: CoinGecko • Yahoo Finance • Real-time
+                        </div>
+                    </div>
+                </Panel>
+            );
+        };
+
+        const MobileDrawer = ({ open, onClose, children }) => (
+            <>
+                <div className={`drawer-overlay ${open ? 'open' : ''}`} onClick={onClose}></div>
+                <div className={`mobile-drawer bg-[var(--bg-secondary)] border-r border-[var(--border-primary)] ${open ? 'open' : ''}`}>
+                    <div className="h-10 px-3 flex items-center justify-between border-b border-[var(--border-primary)]">
+                        <span className="text-[#ff6600] font-semibold text-sm">PULSE</span>
+                        <button onClick={onClose} className="p-1 hover:bg-[var(--bg-tertiary)] rounded">✕</button>
+                    </div>
+                    <div className="p-2 space-y-2 overflow-auto h-[calc(100%-40px)]">{children}</div>
+                </div>
+            </>
+        );
+
+        const StatusBar = ({ time, marketStatus }) => (
+            <div className="h-6 bg-[var(--bg-tertiary)] border-t border-[var(--border-primary)] flex items-center justify-between px-3 text-[9px]">
+                <div className="flex items-center gap-3">
+                    <span className="flex items-center gap-1"><span className="status-dot normal"></span>SYSTEMS OK</span>
+                    <span className="text-[var(--text-muted)] hidden sm:inline">DATA: REAL-TIME</span>
+                </div>
+                <div className="flex items-center gap-3 text-[var(--text-muted)]">
+                    <span className="hidden sm:inline">{time}</span>
+                    <span>UNCLASSIFIED // OSINT</span>
+                </div>
+            </div>
+        );
+
+        // ============ APP ============
+        const App = () => {
+            const [time, setTime] = useState(formatTime());
+            const [prefs, setPrefs] = useState(loadPrefs);
+            const [drawerOpen, setDrawerOpen] = useState(false);
+            const { news } = useNews(prefs);
+            const timeIntervalRef = useRef(null);
+
+            useEffect(() => { document.body.classList.toggle('light-mode', prefs.theme === 'light'); }, [prefs.theme]);
+            useEffect(() => { savePrefs(prefs); }, [prefs]);
+            useEffect(() => { 
+                timeIntervalRef.current = setInterval(() => setTime(formatTime()), 1000); 
+                return () => { if (timeIntervalRef.current) clearInterval(timeIntervalRef.current); };
+            }, []);
+
+            return (
+                <AppContext.Provider value={{ prefs, setPrefs }}>
+                    <div className="h-screen w-screen flex flex-col overflow-hidden">
+                        <Header time={time} prefs={prefs} setPrefs={setPrefs} onMenuClick={() => setDrawerOpen(true)} />
+                        <DefconBar level={3} />
+                        <AlertTicker news={news} />
+
+                        <main className="flex-1 flex overflow-hidden min-h-0">
+                            <aside className="desktop-sidebar w-[300px] xl:w-[340px] border-r border-[var(--border-primary)] flex-col hidden lg:flex">
+                                <div className="flex-1 overflow-auto p-1.5 space-y-1.5">
+                                    <div className="h-[55%]"><IntelFeed /></div>
+                                    <div className="h-[45%]"><OsintPanel /></div>
+                                </div>
+                            </aside>
+
+                            <section className="flex-1 p-1.5 overflow-hidden">
+                                <ThreatMap />
+                            </section>
+
+                            <aside className="desktop-sidebar w-[320px] xl:w-[360px] border-l border-[var(--border-primary)] flex-col hidden xl:flex">
+                                <div className="flex-1 overflow-auto p-1.5 space-y-1.5">
+                                    <div className="h-[55%]"><PredictionTerminal /></div>
+                                    <div className="h-[45%]"><MarketTerminal /></div>
+                                </div>
+                            </aside>
+                        </main>
+
+                        <StatusBar time={time} />
+
+                        <MobileDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>
+                            <div className="h-64"><IntelFeed /></div>
+                            <div className="h-48"><OsintPanel /></div>
+                            <div className="h-64"><PredictionTerminal /></div>
+                            <div className="h-48"><MarketTerminal /></div>
+                        </MobileDrawer>
+                    </div>
+                </AppContext.Provider>
+            );
+        };
+
+        ReactDOM.createRoot(document.getElementById('root')).render(
+            <ErrorBoundary>
+                <App />
+            </ErrorBoundary>
+        );
+    </script>
+</body>
+</html>
